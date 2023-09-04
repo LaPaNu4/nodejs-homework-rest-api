@@ -1,19 +1,103 @@
-// const fs = require('fs/promises')
+import fs from "fs/promises";
+import path from "path";
+import { nanoid } from "nanoid";
 
-const listContacts = async () => {}
+const contactsPath = path.resolve("models", "contacts.json");
 
-const getContactById = async (contactId) => {}
+const updateContacts = (contact) =>
+  fs.writeFile(contactsPath, JSON.stringify(contact, null, 2));
 
-const removeContact = async (contactId) => {}
+export async function listContacts() {
+  try {
+    const data = await fs.readFile(contactsPath, "utf-8");
+    const contacts = JSON.parse(data);
+    return contacts;
+  } catch (error) {
+    console.error("Помилка при зчитуванні файлу:", error);
+    return [];
+  }
+}
 
-const addContact = async (body) => {}
+export async function getContactById(contactId) {
+  try {
+    const data = await fs.readFile(contactsPath, "utf-8");
+    const contacts = JSON.parse(data);
 
-const updateContact = async (contactId, body) => {}
+    const contact = contacts.find((contact) => contact.id === contactId);
+    return contact || null;
+  } catch (error) {
+    console.error("Помилка при зчитуванні файлу:", error);
+    return null;
+  }
+}
 
-module.exports = {
+export async function removeContact(contactId) {
+  try {
+    const data = await fs.readFile(contactsPath, "utf-8");
+    const contacts = JSON.parse(data);
+
+    const contactIndex = contacts.findIndex(
+      (contact) => contact.contactId === contactId
+    );
+
+    if (contactIndex !== -1) {
+      const removedContact = contacts.splice(contactIndex, 1)[0];
+
+      await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+
+      return removedContact;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Помилка при зчитуванні/запису файлу:", error);
+    return null;
+  }
+}
+
+export async function addContact(name, email, phone) {
+  try {
+    const data = await fs.readFile(contactsPath, "utf-8");
+    const contacts = JSON.parse(data);
+
+    const newContact = {
+      id: nanoid(),
+      name,
+      email,
+      phone,
+    };
+
+    contacts.push(newContact);
+
+    await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+
+    return newContact;
+  } catch (error) {
+    console.error("Помилка при зчитуванні/запису файлу:", error);
+    return null;
+  }
+}
+
+const updateContact = async (contactId, body) => {
+  try {
+    const contact = await listContacts();
+    const index = contact.findIndex((contact) => contact.id === contactId);
+    if (index === -1) {
+      return null;
+    }
+    contact[index] = { contactId, ...body };
+    await updateContacts(contact);
+    return contact[index];
+  } catch (error) {
+    console.error("Помилка при зчитуванні/запису файлу:", error);
+    return null;
+  }
+};
+
+export default {
   listContacts,
   getContactById,
   removeContact,
   addContact,
   updateContact,
-}
+};
