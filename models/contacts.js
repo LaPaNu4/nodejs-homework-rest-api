@@ -80,14 +80,16 @@ export async function addContact(name, email, phone) {
 
 const updateContact = async (contactId, body) => {
   try {
-    const contact = await listContacts();
-    const index = contact.findIndex((contact) => contact.id === contactId);
+    const contacts = await listContacts();
+    const index = contacts.findIndex((contact) => contact.id === contactId);
     if (index === -1) {
       return null;
     }
-    contact[index] = { contactId, ...body };
-    await updateContacts(contact);
-    return contact[index];
+    const oldContact = contacts[index];
+    const updatedContact = { ...oldContact, ...body };
+    contacts[index] = updatedContact;
+    await updateContacts(contacts);
+    return contacts[index];
   } catch (error) {
     console.error("Помилка при зчитуванні/запису файлу:", error);
     return null;

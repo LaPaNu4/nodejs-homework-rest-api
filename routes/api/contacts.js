@@ -7,10 +7,10 @@ import { HttpError } from "../../helpers/index.js";
 const contactsRouter = express.Router();
 
 const contactAddSchema = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string().required(),
-  phone: Joi.string().required(),
-});
+  name: Joi.string(),
+  email: Joi.string(),
+  phone: Joi.string(),
+}).min(1);
 
 contactsRouter.get("/", async (req, res, next) => {
   try {
