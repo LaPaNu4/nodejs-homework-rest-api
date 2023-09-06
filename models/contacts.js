@@ -55,16 +55,16 @@ export async function removeContact(contactId) {
   }
 }
 
-export async function addContact(name, email, phone) {
+export async function addContact({name, email, phone}) {
   try {
     const data = await fs.readFile(contactsPath, "utf-8");
     const contacts = JSON.parse(data);
 
     const newContact = {
       id: nanoid(),
-      name,
-      email,
-      phone,
+      name: name,
+      email: email,
+      phone : phone
     };
 
     contacts.push(newContact);

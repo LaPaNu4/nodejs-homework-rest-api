@@ -6,11 +6,17 @@ import { HttpError } from "../../helpers/index.js";
 
 const contactsRouter = express.Router();
 
-const contactAddSchema = Joi.object({
+const contactChangeSchema = Joi.object({
   name: Joi.string(),
   email: Joi.string(),
   phone: Joi.string(),
 }).min(1);
+
+const contactAddSchema = Joi.object({
+  name: Joi.string().required(),
+  email: Joi.string().required(),
+  phone: Joi.string().required(),
+});
 
 contactsRouter.get("/", async (req, res, next) => {
   try {
@@ -62,7 +68,7 @@ contactsRouter.delete("/:contactId", async (req, res, next) => {
 
 contactsRouter.put("/:contactId", async (req, res, next) => {
   try {
-    const { error } = contactAddSchema.validate(req.body);
+    const { error } = contactChangeSchema.validate(req.body);
     if (error) {
       throw HttpError(400, "missing fields");
     }
