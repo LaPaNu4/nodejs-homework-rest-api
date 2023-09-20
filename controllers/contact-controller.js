@@ -40,7 +40,7 @@ const updateById = async (req, res) => {
   const updatedContact = await Contact.findOneAndUpdate(filter, req.body, {
     new: true,
   });
-  if (!result) {
+  if (!updatedContact) {
     throw HttpError(404, "Not found");
   }
   res.status(200).json(updatedContact);
