@@ -105,26 +105,23 @@ const avatars = async (req, res) => {
   if (!userId) {
     return res.status(401).json({ message: "Not authorized" });
   }
-
   try {
     const uniqueFileName = `${userId}_${Date.now()}${path.extname(
       req.file.originalname
     )}`;
-
     const publicAvatarsDir = path.join(process.cwd(), "public/avatars");
     const imagePath = path.join(publicAvatarsDir, uniqueFileName);
     const tmpImagePath = req.file.path;
     const image = await jimp.read(tmpImagePath);
-    image.resize(250, 250);
+    image.resize(250, 250); //resize 250x250
     await image.writeAsync(tmpImagePath);
-     await fs.rename(tmpImagePath, imagePath);
+    await fs.rename(tmpImagePath, imagePath);
     const avatarURL = `/avatars/${uniqueFileName}`;
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { avatarURL },
       { new: true }
     );
-
     res.status(200).json({ updatedUser });
   } catch (error) {
     console.error(error);
