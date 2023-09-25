@@ -1,8 +1,12 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import jimp from "jimp";
+import path from "path";
+import fs from "fs/promises";
 import { HttpError } from "../helpers/index.js";
 import { ctrlWrapper } from "../decorators/index.js";
+import gravatar from "gravatar";
 
 const { JWT_SECRET } = process.env;
 
@@ -13,12 +17,22 @@ const signup = async (req, res) => {
     throw HttpError(409, "Email in use");
   }
   const hashPassword = await bcrypt.hash(password, 10);
-  const newUser = await User.create({ ...req.body, password: hashPassword });
+  const avatarURL = gravatar.url(email, {
+    s: "200",
+    r: "pg",
+    d: "identicon",
+  });
+  const newUser = await User.create({
+    ...req.body,
+    password: hashPassword,
+    avatarURL,
+  });
 
   res.status(201).json({
     user: {
       email: newUser.email,
       subscription: "starter",
+      avatarURL: newUser.avatarURL,
     },
   });
 };
@@ -86,10 +100,43 @@ const subscription = async (req, res) => {
   });
 };
 
+const avatars = async (req, res) => {
+  const { _id: userId } = req.user;
+  if (!userId) {
+    return res.status(401).json({ message: "Not authorized" });
+  }
+
+  try {
+    const uniqueFileName = `${userId}_${Date.now()}${path.extname(
+      req.file.originalname
+    )}`;
+
+    const publicAvatarsDir = path.join(process.cwd(), "public/avatars");
+    const imagePath = path.join(publicAvatarsDir, uniqueFileName);
+    const tmpImagePath = req.file.path;
+    const image = await jimp.read(tmpImagePath);
+    image.resize(250, 250);
+    await image.writeAsync(tmpImagePath);
+     await fs.rename(tmpImagePath, imagePath);
+    const avatarURL = `/avatars/${uniqueFileName}`;
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { avatarURL },
+      { new: true }
+    );
+
+    res.status(200).json({ updatedUser });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 export default {
   signup: ctrlWrapper(signup),
   signin: ctrlWrapper(signin),
   getCurrent: ctrlWrapper(getCurrent),
   logout: ctrlWrapper(logout),
   subscription: ctrlWrapper(subscription),
+  avatars: ctrlWrapper(avatars),
 };
