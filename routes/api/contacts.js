@@ -5,6 +5,7 @@ import { validateBody } from "../../decorators/index.js";
 import {
   isValid,
   authenticate,
+  
 } from "../../middlewares/index.js";
 
 const contactsRouter = express.Router();
@@ -18,7 +19,7 @@ contactsRouter.get("/", contactController.getAll);
 
 contactsRouter.get("/:contactId", isValid, contactController.getById);
 
-contactsRouter.post("/", contactAddValidate, contactController.add);
+contactsRouter.post("/",  contactAddValidate, contactController.add);
 
 contactsRouter.put(
   "/:contactId",
