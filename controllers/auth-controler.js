@@ -113,7 +113,7 @@ const avatars = async (req, res) => {
     const imagePath = path.join(publicAvatarsDir, uniqueFileName);
     const tmpImagePath = req.file.path;
     const image = await jimp.read(tmpImagePath);
-    image.resize(250, 250); //resize 250x250
+    await image.resize(250, 250); //resize 250x250
     await image.writeAsync(tmpImagePath);
     await fs.rename(tmpImagePath, imagePath);
     const avatarURL = `/avatars/${uniqueFileName}`;
