@@ -4,11 +4,12 @@ import User from "../models/User.js";
 import jimp from "jimp";
 import path from "path";
 import fs from "fs/promises";
-import { HttpError } from "../helpers/index.js";
+import { HttpError , sendEmail } from "../helpers/index.js";
 import { ctrlWrapper } from "../decorators/index.js";
 import gravatar from "gravatar";
+import { nanoid } from "nanoid";
 
-const { JWT_SECRET } = process.env;
+const { JWT_SECRET, BASE_URL } = process.env;
 
 const signup = async (req, res) => {
   const { email, password } = req.body;
@@ -22,11 +23,19 @@ const signup = async (req, res) => {
     r: "pg",
     d: "identicon",
   });
+  const verificationToken = nanoid();
   const newUser = await User.create({
     ...req.body,
     password: hashPassword,
     avatarURL,
+    verificationToken,
   });
+  const verifyEmail = {
+    to: email,
+    subject: "Verify email",
+    html: `<a target="_blank" href="${BASE_URL}/api/auth/users/verify/${verificationToken}">click to verify</a>`,
+  };
+  await sendEmail(verifyEmail)
 
   res.status(201).json({
     user: {
@@ -39,8 +48,12 @@ const signup = async (req, res) => {
 const signin = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
+  
   if (!user) {
     throw HttpError(401, "Email or password invalid");
+  }
+  if (!user.verify) {
+     throw HttpError(401, "not verified");
   }
   const passwordCompare = await bcrypt.compare(password, user.password);
   if (!passwordCompare) {
@@ -129,6 +142,41 @@ const avatars = async (req, res) => {
   }
 };
 
+const verification = async (req, res) => {
+  const { verificationToken } = req.params;
+  const user = await User.findOne({ verificationToken });
+  if (!user) {
+    throw HttpError(404, "Not Found");
+  }
+  await User.findByIdAndUpdate(user._id,{verify: true, verificationToken: "verify"})
+  return res.status(200).json({ massage: "Verification successful" });
+};
+
+const verifyResend = async (req, res) => {
+  const { email } = req.body;
+   if (!email) {
+     throw HttpError(400, "missing required field email");
+  }
+  const user = await User.findOne({ email });
+  
+    if (!user) {
+      throw HttpError(404, "User not found");
+    }
+
+    if (user.verify) {
+      throw HttpError(400, "Verification has already been passed");
+  }
+   const verifyEmail = {
+     to: email,
+     subject: "Verify email",
+     html: `<a target="_blank" href="${BASE_URL}/api/auth/users/verify/${user.verificationToken}">click to verify</a>`,
+   };
+
+   await sendEmail(verifyEmail);
+
+   res.status(200).json({ message: "Verification email sent" });
+ }
+
 export default {
   signup: ctrlWrapper(signup),
   signin: ctrlWrapper(signin),
@@ -136,4 +184,6 @@ export default {
   logout: ctrlWrapper(logout),
   subscription: ctrlWrapper(subscription),
   avatars: ctrlWrapper(avatars),
+  verification: ctrlWrapper(verification),
+  verifyResend: ctrlWrapper(verifyResend),
 };
